@@ -12,6 +12,12 @@ export default function DocumentDetailView({ folderId, documentId }) {
     const [activeTab, setActiveTab] = useState("extracted_data");
     const [status, setStatus] = useState('Pending');
     const [extractedData, setExtractedData] = useState(null);
+    const [extractedDataIndexes, setExtractedDataIndexes] = useState(null);
+
+    // Example: extractedDataIndexs could come from props, context, or be fetched
+    const extractedDataIndexs = [
+        // Add your index keys here, e.g. 'order_date', 'order_reference', ...
+    ];
 
     useEffect(() => {
         async function fetchDocument() {
@@ -24,10 +30,14 @@ export default function DocumentDetailView({ folderId, documentId }) {
                     throw new Error("Failed to fetch document");
                 }
                 const data = await response.json();
+                
                 setDocument(data.document);
                 setStatus(data.document.status || 'Pending');
                 if (data.document.status && data.document.status !== 'Pending') {
-                    setExtractedData(data.document.extractedData || null);
+                    setExtractedData(data.document.metadata || []);
+                    setExtractedDataIndexes(data.document.indexes || []);
+                    console.log(data.document.indexes || []);
+                    console.log(data.document.metadata || {});
                 } else {
                     setExtractedData(null);
                 }
@@ -46,16 +56,6 @@ export default function DocumentDetailView({ folderId, documentId }) {
 
     const handleGoBack = () => {
         router.push(`/folders/${folderId}`);
-    };
-
-    const onClickValider = () => {
-
-    }
-
-
-    const getDocsViewerUrl = (url) => {
-        if (!url) return null;
-        return `https://docs.google.com/gview?embedded=true&url=${encodeURIComponent(url)}`;
     };
 
     if (loading) {
@@ -185,104 +185,36 @@ export default function DocumentDetailView({ folderId, documentId }) {
 
                     {/* Content */}
                     <div className="flex-1 overflow-y-auto p-4">
-                        {status === 'Pending' ? (
-                            <div className="text-center text-gray-500">No extracted data available. Status: Pending.</div>
-                        ) : activeTab === "extracted_data" ? (
-                            extractedData ? (
-                                <div className="space-y-6">
-                                    <div>
-                                        <h3 className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">
-                                            document_title
-                                        </h3>
-                                        <p className="text-sm">
-                                            {extractedData.document_title}
-                                        </p>
+                        {
+                            status !== 'Pending' && (
+                                activeTab === "extracted_data" ? 
+                                (
+                                    <div className="mb-4">
+                                        <ul className="list-disc list-inside space-y-1">
+                                            {
+                                                Object.keys(extractedData).map((key, index) => (
+                                                    <li key={index} className="text-sm text-gray-700">
+                                                        <span style={{color:extractedDataIndexes.includes(key)?"#228B22":"#000000"}} className="font-semibold">{key}{extractedDataIndexes.includes(key)?" (Indexe suggere)":""}:</span> {extractedData[key]}
+                                                    </li>
+                                                ))
+                                            }
+                                        </ul>
                                     </div>
-                                    <div>
-                                        <h3 className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">
-                                            items ({extractedData.items?.length || 0} item)
-                                        </h3>
-                                        <div className="bg-white border border-gray-200 rounded overflow-hidden">
-                                            <table className="min-w-full divide-y divide-gray-200">
-                                                <thead className="bg-gray-50">
-                                                    <tr>
-                                                        <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                            designation
-                                                        </th>
-                                                        <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                            quantity
-                                                        </th>
-                                                        <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                            total_price
-                                                        </th>
-                                                        <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                            unit_price
-                                                        </th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody className="bg-white divide-y divide-gray-200">
-                                                    {extractedData.items?.map((item, idx) => (
-                                                        <tr key={idx}>
-                                                            <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-900">
-                                                                {item.designation}
-                                                            </td>
-                                                            <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-900">
-                                                                {item.quantity}
-                                                            </td>
-                                                            <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-900">
-                                                                {item.total_price}
-                                                            </td>
-                                                            <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-900">
-                                                                {item.unit_price}
-                                                            </td>
-                                                        </tr>
-                                                    ))}
-                                                </tbody>
-                                            </table>
-                                        </div>
-                                    </div>
-                                    <div>
-                                        <h3 className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">
-                                            order_date
-                                        </h3>
-                                        <p className="text-sm">
-                                            {extractedData.order_date}
-                                        </p>
-                                    </div>
-                                    <div>
-                                        <h3 className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">
-                                            order_reference
-                                        </h3>
-                                        <p className="text-sm">
-                                            {extractedData.order_reference}
-                                        </p>
-                                    </div>
-                                    <div>
-                                        <h3 className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">
-                                            order_title
-                                        </h3>
-                                        <p className="text-sm">
-                                            {extractedData.order_title}
-                                        </p>
-                                    </div>
-                                </div>
-                            ) : (
-                                <div className="text-center text-gray-500">No extracted data found.</div>
-                            )
-                        ) : (
-                            <div className="bg-gray-50 p-4 rounded-md">
-                                <pre className="text-xs overflow-auto">
-                                    {JSON.stringify(extractedData, null, 2)}
-                                </pre>
-                            </div>
-                        )}
+                                )
+                                :
+                                (
+                                    <pre className="bg-gray-100 p-4 rounded-md text-sm text-gray-700 overflow-x-auto">
+                                        {JSON.stringify(extractedData, null, 2)}
+                                    </pre>
+                                )
+                            )  
+                        }
                     </div>
 
                     {/* Footer */}
                     <div className="p-4 border-t border-gray-200">
                         <button
                             className="w-full bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700"
-                            onClick={onClickValider}
                         >
                             Valider les résultats
                         </button>
